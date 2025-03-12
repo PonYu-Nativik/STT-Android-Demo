@@ -1,5 +1,7 @@
 package com.stt.demo.stt
 
+import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -28,6 +30,27 @@ class STTManager(
     init {
         errorLog("Speech Recognition init.", false)
         Handler(Looper.getMainLooper()).post {
+
+            val intent = Intent(RecognizerIntent.ACTION_GET_LANGUAGE_DETAILS)
+            context.sendOrderedBroadcast(intent, null, object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    if (resultCode == Activity.RESULT_OK) {
+                        val results = getResultExtras(true)
+
+                        // Supported languages
+                        val prefLang = results.getString(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE)
+                        val allLangs = results.getCharSequenceArrayList(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES)
+
+                        Log.d("BroadcastReceiver", "sendOrderedBroadcast prefLang = $prefLang")
+                        Log.d("BroadcastReceiver", "sendOrderedBroadcast allLangs.Count = ${allLangs?.count()}")
+
+                        allLangs?.forEach {
+                            Log.d("BroadcastReceiver", "sendOrderedBroadcast allLangs $it")
+                        }
+                    }
+                }
+            }, null, Activity.RESULT_OK, null, null)
+
             if (!SpeechRecognizer.isRecognitionAvailable(context)) {
                 errorLog("Speech Recognition is not available on this device.")
             } else {
