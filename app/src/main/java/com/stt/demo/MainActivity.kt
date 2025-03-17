@@ -1,8 +1,13 @@
 package com.stt.demo
 
 import android.Manifest
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,13 +41,37 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val REQUEST_CODE_AUDIO = 1001
+        private const val REQUEST_CODE_SPEECH = 1001
     }
 
     private lateinit var sttManager: STTManager
     private var isSpeak: Boolean = false
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_CODE_SPEECH && resultCode == RESULT_OK) {
+            val matches = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            matches?.forEach {
+                Log.d("MainActivity", "Распознанный текст: $it")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        /*val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Скажите что-нибудь")
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US") // Принудительно укажем язык
+        intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, this.packageName)
+
+        try {
+            startActivityForResult(intent, REQUEST_CODE_SPEECH)
+        } catch (e: ActivityNotFoundException) {
+            Log.e("MainActivity", "Speech recognition not supported on this device")
+        }*/
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED

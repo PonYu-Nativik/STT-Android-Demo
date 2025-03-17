@@ -31,27 +31,79 @@ class STTManager(
         errorLog("Speech Recognition init.", false)
         Handler(Looper.getMainLooper()).post {
 
+            val intent1 = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            val activities = context.packageManager.queryIntentActivities(intent1, 0)
+            if (activities.isEmpty()) {
+                Log.e(TAG, "Распознавание речи не поддерживается на этом устройстве")
+            } else {
+                Log.d(TAG, "STT доступен, можно использовать RecognizerIntent")
+            }
+
             val intent = Intent(RecognizerIntent.ACTION_GET_LANGUAGE_DETAILS)
             context.sendOrderedBroadcast(intent, null, object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    if (resultCode == Activity.RESULT_OK) {
-                        val results = getResultExtras(true)
-
-                        // Supported languages
-                        val prefLang = results.getString(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE)
-                        val allLangs = results.getCharSequenceArrayList(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES)
-
-                        Log.d("BroadcastReceiver", "sendOrderedBroadcast prefLang = $prefLang")
-                        Log.d("BroadcastReceiver", "sendOrderedBroadcast allLangs.Count = ${allLangs?.count()}")
-
-                        allLangs?.forEach {
-                            Log.d("BroadcastReceiver", "sendOrderedBroadcast allLangs $it")
-                        }
+                    val results = getResultExtras(true)
+                    if (results == null) {
+                        Log.e(TAG, "No results from ACTION_GET_LANGUAGE_DETAILS")
+                        return
                     }
+
+                    // Предпочитаемый язык
+                    val prefLang = results.getString(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE)
+                    Log.d(TAG, "EXTRA_LANGUAGE_PREFERENCE: $prefLang")
+
+                    // Поддерживаемые языки
+                    val allSupportedLangs = results.getCharSequenceArrayList(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES)
+                    Log.d(TAG, "EXTRA_SUPPORTED_LANGUAGES count: ${allSupportedLangs?.size ?: 0}")
+                    allSupportedLangs?.forEach {
+                        Log.d(TAG, "Supported language: $it")
+                    }
+
+                    // Текущая языковая модель
+                    val languageModel = results.getString(RecognizerIntent.EXTRA_LANGUAGE)
+                    Log.d(TAG, "EXTRA_LANGUAGE: $languageModel")
+
+                    // Предпочтение оффлайн-режима
+                    val offlineSupported = results.getBoolean(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
+                    Log.d(TAG, "EXTRA_PREFER_OFFLINE: $offlineSupported")
+
+                    // Максимальное количество результатов
+                    val maxResults = results.getInt(RecognizerIntent.EXTRA_MAX_RESULTS, -1)
+                    Log.d(TAG, "EXTRA_MAX_RESULTS: $maxResults")
+
+                    // Разрешены ли частичные результаты
+                    val partialResults = results.getBoolean(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                    Log.d(TAG, "EXTRA_PARTIAL_RESULTS: $partialResults")
+
+                    // Минимальное время прослушивания (мс)
+                    val minSpeechLength = results.getLong(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, -1)
+                    Log.d(TAG, "EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS: $minSpeechLength")
+
+                    // Задержка перед завершением прослушивания (мс)
+                    val completeSilence = results.getLong(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, -1)
+                    Log.d(TAG, "EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: $completeSilence")
+
+                    // Время возможного завершения прослушивания (мс)
+                    val possiblyCompleteSilence = results.getLong(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, -1)
+                    Log.d(TAG, "EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: $possiblyCompleteSilence")
+
+                    // Оценки уверенности
+                    val confidenceScores = results.getFloatArray(RecognizerIntent.EXTRA_CONFIDENCE_SCORES)
+                    if (confidenceScores != null) {
+                        confidenceScores.forEachIndexed { index, score ->
+                            Log.d(TAG, "Confidence score [$index]: $score")
+                        }
+                    } else {
+                        Log.d(TAG, "EXTRA_CONFIDENCE_SCORES: null")
+                    }
+
+                    // Флаг возврата только предпочитаемого языка
+                    val onlyReturnLangPref = results.getBoolean(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+                    Log.d(TAG, "EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE: $onlyReturnLangPref")
                 }
             }, null, Activity.RESULT_OK, null, null)
 
-            if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+           /* if (!SpeechRecognizer.isRecognitionAvailable(context)) {
                 errorLog("Speech Recognition is not available on this device.")
             } else {
                 speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
@@ -126,7 +178,7 @@ class STTManager(
                     })
                 errorLog("Speech Recognition is available on this device.", false)
                 sttListener?.onSuccess()
-            }
+            }*/
         }
     }
 
